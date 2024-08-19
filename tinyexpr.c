@@ -304,7 +304,7 @@ void next_token(state *s) {
                     case '/': s->type = TOK_INFIX; s->function = divide; break;
                     case '^': s->type = TOK_INFIX; s->function = pow; break;
                     case '%': s->type = TOK_INFIX; s->function = fmod; break;
-                    case '!':
+                                        case '!':
                         if (s->next++[0] == '=') {
                             s->type = TOK_INFIX; s->function = not_equal;
                         } else {
@@ -504,32 +504,27 @@ static te_expr *power(state *s) {
             ret = base(s);
         } else if (logical == -1) {
             ret = NEW_EXPR(TE_FUNCTION1 | TE_FLAG_PURE, base(s));
+            CHECK_NULL(ret);
             ret->function = logical_not;
         } else {
             ret = NEW_EXPR(TE_FUNCTION1 | TE_FLAG_PURE, base(s));
+            CHECK_NULL(ret);
             ret->function = logical_notnot;
         }
     } else {
-<<<<<<< HEAD
-        te_expr *b = base(s);
-        CHECK_NULL(b);
-
-        ret = NEW_EXPR(TE_FUNCTION1 | TE_FLAG_PURE, b);
-        CHECK_NULL(ret, te_free(b));
-
-        ret->function = negate;
-=======
         if (logical == 0) {
             ret = NEW_EXPR(TE_FUNCTION1 | TE_FLAG_PURE, base(s));
+            CHECK_NULL(ret);
             ret->function = negate;
         } else if (logical == -1) {
             ret = NEW_EXPR(TE_FUNCTION1 | TE_FLAG_PURE, base(s));
+            CHECK_NULL(ret);
             ret->function = negate_logical_not;
         } else {
             ret = NEW_EXPR(TE_FUNCTION1 | TE_FLAG_PURE, base(s));
+            CHECK_NULL(ret);
             ret->function = negate_logical_notnot;
         }
->>>>>>> 4dfb202cc9f8324dcf78bc568637628324c4d357
     }
 
     return ret;
@@ -539,14 +534,9 @@ static te_expr *power(state *s) {
 static te_expr *factor(state *s) {
     /* <factor>    =    <power> {"^" <power>} */
     te_expr *ret = power(s);
-    CHECK_NULL(ret);
 
-<<<<<<< HEAD
-    int neg = 0;
-=======
     const void *left_function = NULL;
     te_expr *insertion = 0;
->>>>>>> 4dfb202cc9f8324dcf78bc568637628324c4d357
 
     if (ret->type == (TE_FUNCTION1 | TE_FLAG_PURE) &&
         (ret->function == negate || ret->function == logical_not || ret->function == logical_notnot ||
@@ -557,48 +547,29 @@ static te_expr *factor(state *s) {
         ret = se;
     }
 
-    te_expr *insertion = 0;
-
     while (s->type == TOK_INFIX && (s->function == pow)) {
         te_fun2 t = s->function;
         next_token(s);
 
         if (insertion) {
             /* Make exponentiation go right-to-left. */
-            te_expr *p = power(s);
-            CHECK_NULL(p, te_free(ret));
-
-            te_expr *insert = NEW_EXPR(TE_FUNCTION2 | TE_FLAG_PURE, insertion->parameters[1], p);
-            CHECK_NULL(insert, te_free(p), te_free(ret));
-
+            te_expr *insert = NEW_EXPR(TE_FUNCTION2 | TE_FLAG_PURE, insertion->parameters[1], power(s));
+            CHECK_NULL(insert);
             insert->function = t;
             insertion->parameters[1] = insert;
             insertion = insert;
         } else {
-            te_expr *p = power(s);
-            CHECK_NULL(p, te_free(ret));
-
-            te_expr *prev = ret;
-            ret = NEW_EXPR(TE_FUNCTION2 | TE_FLAG_PURE, ret, p);
-            CHECK_NULL(ret, te_free(p), te_free(prev));
-
+            ret = NEW_EXPR(TE_FUNCTION2 | TE_FLAG_PURE, ret, power(s));
+            CHECK_NULL(ret);
             ret->function = t;
             insertion = ret;
         }
     }
 
-<<<<<<< HEAD
-    if (neg) {
-        te_expr *prev = ret;
-        ret = NEW_EXPR(TE_FUNCTION1 | TE_FLAG_PURE, ret);
-        CHECK_NULL(ret, te_free(prev));
-
-        ret->function = negate;
-=======
     if (left_function) {
         ret = NEW_EXPR(TE_FUNCTION1 | TE_FLAG_PURE, ret);
+        CHECK_NULL(ret);
         ret->function = left_function;
->>>>>>> 4dfb202cc9f8324dcf78bc568637628324c4d357
     }
 
     return ret;
@@ -612,20 +583,14 @@ static te_expr *factor(state *s) {
     while (s->type == TOK_INFIX && (s->function == pow)) {
         te_fun2 t = s->function;
         next_token(s);
-        te_expr *p = power(s);
-        CHECK_NULL(p, te_free(ret));
-
-        te_expr *prev = ret;
-        ret = NEW_EXPR(TE_FUNCTION2 | TE_FLAG_PURE, ret, p);
-        CHECK_NULL(ret, te_free(p), te_free(prev));
-
+        ret = NEW_EXPR(TE_FUNCTION2 | TE_FLAG_PURE, ret, power(s));
+        CHECK_NULL(ret);
         ret->function = t;
     }
 
     return ret;
 }
 #endif
-
 
 
 static te_expr *term(state *s) {
@@ -671,7 +636,6 @@ static te_expr *sum_expr(state *s) {
     return ret;
 }
 
-
 static te_expr *test_expr(state *s) {
     /* <expr>      =    <sum_expr> {(">" | ">=" | "<" | "<=" | "==" | "!=") <sum_expr>} */
     te_expr *ret = sum_expr(s);
@@ -701,7 +665,6 @@ static te_expr *expr(state *s) {
 
     return ret;
 }
-
 
 static te_expr *list(state *s) {
     /* <list>      =    <expr> {"," <expr>} */
